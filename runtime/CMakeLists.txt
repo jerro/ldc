@@ -97,6 +97,12 @@ list(APPEND CORE_D ${LDC_D} ${RUNTIME_DIR}/src/object_.d)
 file(GLOB CORE_C ${RUNTIME_DIR}/src/core/stdc/*.c)
 
 if(PHOBOS2_DIR)
+    if(BUILD_SHARED_LIBS)
+        # std.net.curl depends on libcurl – when building a shared library, we
+        # need to take care of that.
+        find_package(CURL REQUIRED)
+    endif()
+
     file(GLOB PHOBOS2_D ${PHOBOS2_DIR}/std/*.d)
     file(GLOB PHOBOS2_D_NET ${PHOBOS2_DIR}/std/net/*.d)
     file(GLOB_RECURSE PHOBOS2_D_INTERNAL ${PHOBOS2_DIR}/std/internal/*.d)
@@ -346,6 +352,10 @@ macro(build_runtime d_flags c_flags ld_flags lib_suffix path_suffix)
             COMPILE_FLAGS               "${c_flags}"
             LINK_FLAGS                  "${ld_flags}"
         )
+        # Phobos now uses curl
+        if(BUILD_SHARED_LIBS)
+            target_link_libraries(phobos-ldc${target_suffix} "curl")
+        endif()
         install(TARGETS phobos-ldc${target_suffix} DESTINATION ${CMAKE_INSTALL_PREFIX}/lib${path_suffix})
         add_dependencies(phobos2 DEPENDS phobos-ldc${target_suffix})
     endif(PHOBOS2_DIR)
