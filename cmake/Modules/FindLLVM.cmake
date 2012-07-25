@@ -73,6 +73,16 @@ else()
         string(REGEX MATCHALL "${prefix}[^ ]+" LLVM_${var} ${tmplibs})
     endmacro()
 
+    llvm_set(VERSION_STRING version)
+    if(${LLVM_VERSION_STRING} MATCHES "3.0[A-Za-z]*")
+        # Version 3.0 does not support component all-targets
+        llvm_set(TARGETS_BUILT targets-built)
+        list(REMOVE_ITEM LLVM_FIND_COMPONENTS "all-targets" index)
+        list(APPEND LLVM_FIND_COMPONENTS ${LLVM_TARGETS_BUILT})
+    else()
+        # Version 3.1+ does not supoort component backend
+        list(REMOVE_ITEM LLVM_FIND_COMPONENTS "backend" index)
+    endif()
     llvm_set(CXXFLAGS cxxflags)
     llvm_set(HOST_TARGET host-target)
     llvm_set(INCLUDE_DIRS includedir)
@@ -80,11 +90,10 @@ else()
     llvm_set(LIBRARY_DIRS libdir)
     llvm_set_libs(LIBRARIES libfiles "${LLVM_LIBRARY_DIRS}/")
     llvm_set(ROOT_DIR prefix)
-    llvm_set(VERSION_STRING version)
 endif()
 
 string(REGEX REPLACE "([0-9]+).*" "\\1" LLVM_VERSION_MAJOR "${LLVM_VERSION_STRING}" )
-string(REGEX REPLACE "[0-9]+\\.([0-9]+).*[A-Za-z]" "\\1" LLVM_VERSION_MINOR "${LLVM_VERSION_STRING}" )
+string(REGEX REPLACE "[0-9]+\\.([0-9]+).*[A-Za-z]*" "\\1" LLVM_VERSION_MINOR "${LLVM_VERSION_STRING}" )
 
 # Use the default CMake facilities for handling QUIET/REQUIRED.
 include(FindPackageHandleStandardArgs)
