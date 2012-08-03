@@ -1,6 +1,8 @@
 project(ldc)
 cmake_minimum_required(VERSION 2.6)
 
+message(FATAL_ERROR "This branch is no longer in use and will be deleted soon. Please switch to master, which supports LLVM 3.1 now.")
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules")
 
 #
