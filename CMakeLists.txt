@@ -293,6 +293,16 @@ set_target_properties(
 )
 target_link_libraries(${LDC_EXE} ${LDC_LIB} ${LIBCONFIG++_LIBRARY})
 
+add_executable(GEN_GCCBUILTINS gen_gccbuiltins.cpp)
+set_target_properties(
+    GEN_GCCBUILTINS PROPERTIES
+    OUTPUT_NAME gen_gccbuiltins
+    RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin
+    COMPILE_FLAGS "${LLVM_CXXFLAGS} -DARCH=x86"
+)
+target_link_libraries(GEN_GCCBUILTINS "${LLVM_LDFLAGS}" ${LLVM_LIBRARIES} "-lLLVMTableGen -lLLVMSupport")
+
+
 # For use by the druntime/Phobos build system.
 get_target_property(LDC_LOC ${LDC_EXE} LOCATION)
 
