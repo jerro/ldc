@@ -557,7 +557,18 @@ void DtoResolveFunction(FuncDeclaration* fdecl)
     // queue declaration unless the function is abstract without body
     if (!fdecl->isAbstract() || fdecl->fbody)
     {
-        DtoDeclareFunction(fdecl);
+        if(
+            fdecl->semanticRun == PASSsemantic3done && 
+            fdecl->availableExternally && 
+            fdecl->getModule() &&
+            !fdecl->naked)
+        {
+            DtoDefineFunction(fdecl);
+        }
+        else 
+        {
+            DtoDeclareFunction(fdecl);
+        }
     }
 }
 
