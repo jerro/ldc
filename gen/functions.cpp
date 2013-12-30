@@ -8,6 +8,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "gen/functions.h"
+#include "gen/utils.h"
 #include "aggregate.h"
 #include "declaration.h"
 #include "id.h"
@@ -706,6 +707,23 @@ static void set_param_attrs(TypeFunction* f, llvm::Function* func, FuncDeclarati
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+// FIXME: merge with pragma.cpp#parseStringExp
+static bool parseStringExp(Expression* e, std::string& res)
+{
+    StringExp *s = NULL;
+
+    e = e->optimize(WANTvalue);
+    if (e->op == TOKstring && (s = static_cast<StringExp *>(e)))
+    {
+        char* str = static_cast<char*>(s->string);
+        res = str;
+        return true;
+    }
+    return false;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+
 void DtoDeclareFunction(FuncDeclaration* fdecl)
 {
     DtoResolveFunction(fdecl);
@@ -815,6 +833,107 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
     if (fdecl->llvmInternal == LLVMglobal_crt_ctor || fdecl->llvmInternal == LLVMglobal_crt_dtor)
     {
         AppendFunctionToLLVMGlobalCtorsDtors(func, fdecl->priority, fdecl->llvmInternal == LLVMglobal_crt_ctor);
+    }
+
+    if (fdecl->userAttributes)
+    {
+        for (ArrayIter<Expression> it(fdecl->userAttributes); !it.done(); it.next())
+        {
+            Expression *attr = (*it)->optimize(WANTvalue);
+            if (!attr || attr->op != TOKcall) continue;
+            if (attr->type->ty != Tstruct) continue;
+            TypeStruct *ts = static_cast<TypeStruct *>(attr->type);
+            StructDeclaration *sym = ts->sym;
+            if (strcmp("Attribute", sym->ident->string)) continue;
+            Module *module = sym->getModule();
+            if (strcmp("attribute", module->md->id->string)) continue;
+            if (module->md->packages->dim != 1 || strcmp("ldc", (*module->md->packages)[0]->string)) continue;
+
+            Expressions *exps = static_cast<CallExp *>(attr)->arguments;
+            assert(exps && exps->dim >= 1);
+
+            Expression *exp = (*exps)[0];
+            std::string name;
+            if (!parseStringExp(exp, name))
+                error(exp->loc, "First argument of @ldc.attribute must be of type string");
+
+            struct SimpleAttribute
+            {
+                std::string name;
+#if LDC_LLVM_VER >= 303
+                llvm::Attribute::AttrKind attr;
+#elif LDC_LLVM_VER == 302
+                llvm::Attributes::AttrVal attr;
+#else
+                llvm::Attribute::AttrConst attr;
+#endif
+            };
+            static SimpleAttribute simpleAttribute[] =
+            {
+                { "alwaysinline", llvm::Attribute::AlwaysInline },
+#if LDC_LLVM_VER >= 304
+                { "builtin", llvm::Attribute::Builtin },
+                { "cold", llvm::Attribute::Cold },
+#endif
+                { "inlinehint", llvm::Attribute::InlineHint },
+#if LDC_LLVM_VER >= 302
+                { "minsize", llvm::Attribute::MinSize },
+#endif
+                { "naked", llvm::Attribute::Naked },
+#if LDC_LLVM_VER >= 304
+                { "nobuiltin", llvm::Attribute::NoBuiltin },
+                { "noduplicate", llvm::Attribute::NoDuplicate },
+#endif
+                { "noimplicitfloat", llvm::Attribute::NoImplicitFloat },
+                { "noinline", llvm::Attribute::NoInline },
+                { "nonlazybind", llvm::Attribute::NonLazyBind },
+                { "noredzone", llvm::Attribute::NoRedZone },
+                { "noreturn", llvm::Attribute::NoReturn },
+                { "nounwind", llvm::Attribute::NoUnwind },
+#if LDC_LLVM_VER >= 304
+                { "optnone", llvm::Attribute::OptimizeNone },
+#endif
+                { "optsize", llvm::Attribute::OptimizeForSize },
+                { "readnone", llvm::Attribute::ReadNone },
+                { "readonly", llvm::Attribute::ReadOnly },
+                { "returns_twice", llvm::Attribute::ReturnsTwice },
+#if LDC_LLVM_VER >= 303
+                { "sanitize_address", llvm::Attribute::SanitizeAddress },
+                { "sanitize_memory", llvm::Attribute::SanitizeMemory },
+                { "sanitize_thread", llvm::Attribute::SanitizeThread },
+#else
+                { "sanitize_address", llvm::Attribute::AddressSafety },
+#endif
+                { "ssp", llvm::Attribute::StackProtect },
+                { "sspreq", llvm::Attribute::StackProtectReq },
+#if LDC_LLVM_VER >= 303
+                { "sspstrong", llvm::Attribute::StackProtectStrong },
+#endif
+                { "uwtable", llvm::Attribute::UWTable },
+            };
+
+            {
+                size_t i = 0, j = sizeof(simpleAttribute) / sizeof(simpleAttribute[0]);
+                do
+                {
+                    size_t k = (i + j) / 2;
+                    int cmp = name.compare(simpleAttribute[k].name);
+                    if (!cmp)
+                    {
+                        func->addFnAttr(simpleAttribute[k].attr);
+                        break;
+                    }
+                    else if (cmp < 0)
+                        j = k;
+                    else
+                        i = k + 1;
+                }
+                while (i != j);
+
+                if (i == j)
+                    error(exp->loc, "Unknown attribute %s\n", name.c_str());
+            }
+        }
     }
 
     IrFuncTy &irFty = fdecl->irFty;
