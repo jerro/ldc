@@ -560,8 +560,7 @@ void DtoResolveFunction(FuncDeclaration* fdecl)
         if(
             fdecl->semanticRun == PASSsemantic3done && 
             fdecl->availableExternally && 
-            fdecl->getModule() &&
-            !fdecl->naked)
+            fdecl->getModule())
         {
             DtoDefineFunction(fdecl);
         }

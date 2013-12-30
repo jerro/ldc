@@ -110,6 +110,11 @@ void DtoDefineNakedFunction(FuncDeclaration* fd)
     Logger::println("DtoDefineNakedFunction(%s)", fd->mangle());
     LOG_SCOPE;
 
+    // Defining naked functions of imported modules will result in 
+    // multiply defined symbols. Those functions can't be 
+    // inlined anyway, so we don't need their definitions either.
+    if(fd->availableExternally) return;
+
     assert(fd->ir.irFunc);
     gIR->functions.push_back(fd->ir.irFunc);
 

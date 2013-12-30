@@ -458,11 +458,10 @@ static bool isAvailableExternally(Dsymbol* sym)
 
 llvm::GlobalValue::LinkageTypes DtoInternalLinkage(Dsymbol* sym)
 {
-    if (DtoIsTemplateInstance(sym)) {
-        if (isAvailableExternally(sym))
-            return llvm::GlobalValue::AvailableExternallyLinkage;
+    if (isAvailableExternally(sym))
+        return importedSymbolLinkage(sym);
+    else if (DtoIsTemplateInstance(sym))
         return templateLinkage;
-    }
     else
         return llvm::GlobalValue::InternalLinkage;
 }

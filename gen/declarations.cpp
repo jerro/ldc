@@ -109,6 +109,9 @@ void ClassDeclaration::codegen(IRState *p)
     IF_LOG Logger::println("ClassDeclaration::codegen: '%s'", toPrettyChars());
     LOG_SCOPE
 
+    if(availableExternally)
+        return;
+
     if (ir.defined) return;
     ir.defined = true;
 
