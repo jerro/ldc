@@ -847,6 +847,7 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
 
     if (fdecl->userAttributes)
     {
+        expandTuples(fdecl->userAttributes);
         for (ArrayIter<Expression> it(fdecl->userAttributes); !it.done(); it.next())
         {
             Expression *attr = (*it)->optimize(WANTvalue);
