@@ -556,21 +556,7 @@ void DtoResolveFunction(FuncDeclaration* fdecl)
 
     // queue declaration unless the function is abstract without body
     if (!fdecl->isAbstract() || fdecl->fbody)
-    {
-        // TODO: when inlining is not enabled, we should only 
-        // call DtoDefineFunction for alwaysinline functions.
-        if(
-            fdecl->semanticRun == PASSsemantic3done && 
-            fdecl->availableExternally && 
-            fdecl->getModule())
-        {
-            DtoDefineFunction(fdecl);
-        }
-        else 
-        {
-            DtoDeclareFunction(fdecl);
-        }
-    }
+        DtoDeclareFunction(fdecl);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -721,6 +707,8 @@ static void set_param_attrs(TypeFunction* f, llvm::Function* func, FuncDeclarati
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
+bool willInline();
+
 void DtoDeclareFunction(FuncDeclaration* fdecl)
 {
     DtoResolveFunction(fdecl);
@@ -832,6 +820,7 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
         AppendFunctionToLLVMGlobalCtorsDtors(func, fdecl->priority, fdecl->llvmInternal == LLVMglobal_crt_ctor);
     }
 
+    bool isAlwaysInline = false;
     if (fdecl->userAttributes)
     {
         expandTuples(fdecl->userAttributes);
@@ -905,6 +894,9 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
                     int cmp = name.compare(simpleAttribute[k].name);
                     if (!cmp)
                     {
+                        if(simpleAttribute[k].attr == llvm::Attribute::AlwaysInline)
+                            isAlwaysInline = true;
+
                         func->addFnAttr(simpleAttribute[k].attr);
                         break;
                     }
@@ -990,6 +982,18 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
                 iarg->setName("unnamed");
             }
         }
+    }
+    
+    bool inliningEnabled = 
+        !global.params.symdebug && willInline() && !global.params.useUnitTests;
+
+    if(
+        (inliningEnabled || isAlwaysInline) &&
+        fdecl->semanticRun == PASSsemantic3done && 
+        fdecl->availableExternally && 
+        fdecl->getModule())
+    {
+        DtoDefineFunction(fdecl);
     }
 }
 
