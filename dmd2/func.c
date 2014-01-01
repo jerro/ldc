@@ -233,6 +233,45 @@ void FuncDeclaration::semantic(Scope *sc)
     protection = sc->protection;
     userAttributes = sc->userAttributes;
 
+#if IN_LLVM
+    if(userAttributes)
+    {
+        bool alwaysInline = false;
+        assert(ldcAttributes.dim == 0);
+        expandTuples(userAttributes);
+        for (size_t i = 0; i < userAttributes->dim; i++)
+        {
+            Expression *attr = (*userAttributes)[i]->optimize(WANTvalue);
+            if (!attr || attr->op != TOKcall) continue;
+            if (attr->type->ty != Tstruct) continue;
+            TypeStruct *ts = static_cast<TypeStruct *>(attr->type);
+            StructDeclaration *sym = ts->sym;
+            if (strcmp("Attribute", sym->ident->string)) continue;
+            Module *module = sym->getModule();
+            if (strcmp("attribute", module->md->id->string)) continue;
+            if (module->md->packages->dim != 1 || strcmp("ldc", (*module->md->packages)[0]->string)) continue;
+
+            Expressions *exps = static_cast<CallExp *>(attr)->arguments;
+            assert(exps && exps->dim >= 1);
+
+            (*exps)[0] = (*exps)[0]->optimize(WANTvalue);
+            Expression* exp = (*exps)[0];
+            if (exp->op != TOKstring)
+                error(exp->loc, "First argument of @ldc.attribute must be of type string");
+
+            ldcAttributes.push(exps);
+
+            const char* name = (const char*)((StringExp*)exp)->string;
+            if(strcmp(name, "alwaysinline") == 0)
+                alwaysInline = true;
+        }
+
+        if(Module* mod = getModule())
+            if(mod != mod->importedFrom && alwaysInline)
+                mod->needExtraInliningSemantic = true;
+    }
+#endif
+
     if (!originalType)
         originalType = type->syntaxCopy();
     if (!type->deco)

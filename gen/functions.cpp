@@ -557,6 +557,8 @@ void DtoResolveFunction(FuncDeclaration* fdecl)
     // queue declaration unless the function is abstract without body
     if (!fdecl->isAbstract() || fdecl->fbody)
     {
+        // TODO: when inlining is not enabled, we should only 
+        // call DtoDefineFunction for alwaysinline functions.
         if(
             fdecl->semanticRun == PASSsemantic3done && 
             fdecl->availableExternally && 
@@ -717,21 +719,6 @@ static void set_param_attrs(TypeFunction* f, llvm::Function* func, FuncDeclarati
 
 //////////////////////////////////////////////////////////////////////////////////////////
 
-// FIXME: merge with pragma.cpp#parseStringExp
-static bool parseStringExp(Expression* e, std::string& res)
-{
-    StringExp *s = NULL;
-
-    e = e->optimize(WANTvalue);
-    if (e->op == TOKstring && (s = static_cast<StringExp *>(e)))
-    {
-        char* str = static_cast<char*>(s->string);
-        res = str;
-        return true;
-    }
-    return false;
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////
 
 void DtoDeclareFunction(FuncDeclaration* fdecl)
@@ -848,25 +835,12 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
     if (fdecl->userAttributes)
     {
         expandTuples(fdecl->userAttributes);
-        for (ArrayIter<Expression> it(fdecl->userAttributes); !it.done(); it.next())
+        for (ArrayIter<Expressions> it(fdecl->ldcAttributes); !it.done(); it.next())
         {
-            Expression *attr = (*it)->optimize(WANTvalue);
-            if (!attr || attr->op != TOKcall) continue;
-            if (attr->type->ty != Tstruct) continue;
-            TypeStruct *ts = static_cast<TypeStruct *>(attr->type);
-            StructDeclaration *sym = ts->sym;
-            if (strcmp("Attribute", sym->ident->string)) continue;
-            Module *module = sym->getModule();
-            if (strcmp("attribute", module->md->id->string)) continue;
-            if (module->md->packages->dim != 1 || strcmp("ldc", (*module->md->packages)[0]->string)) continue;
-
-            Expressions *exps = static_cast<CallExp *>(attr)->arguments;
-            assert(exps && exps->dim >= 1);
-
+            Expressions *exps = *it;
             Expression *exp = (*exps)[0];
-            std::string name;
-            if (!parseStringExp(exp, name))
-                error(exp->loc, "First argument of @ldc.attribute must be of type string");
+            assert(exp->op == TOKstring);
+            std::string name(static_cast<const char*>(((StringExp*)exp)->string));
 
             struct SimpleAttribute
             {

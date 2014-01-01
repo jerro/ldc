@@ -748,6 +748,7 @@ struct FuncDeclaration : Declaration
     // function with contracts.
     Expressions *fdrequireParams;
     Expressions *fdensureParams;
+    ArrayBase<Expressions> ldcAttributes;
 #endif
 
     Identifier *outId;                  // identifier for out statement

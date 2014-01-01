@@ -136,6 +136,7 @@ Module::Module(char *filename, Identifier *ident, int doDocComment, int doHdrGen
     this->doHdrGen = doHdrGen;
     this->isRoot = false;
     this->arrayfuncs = 0;
+    this->needExtraInliningSemantic = false;
 #endif
 }
 

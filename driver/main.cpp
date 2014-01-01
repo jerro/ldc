@@ -1018,6 +1018,7 @@ int main(int argc, char **argv)
     if (global.errors)
         fatal();
 
+    // Do extra pass 3 semantic analysis for inlining
     // This doesn't play nice with debug info at the moment.
     //
     // Also, don't run the additional semantic3 passes when building unit tests.
@@ -1035,25 +1036,21 @@ int main(int argc, char **argv)
     // Alternatively, we could also amend the availableExternally detection
     // logic (e.g. just codegen everything on -unittest builds), but the extra
     // inlining is unlikely to be important for test builds anyway.
-    if (!global.params.symdebug && willInline() && !global.params.useUnitTests)
+    bool needExtraInliningSemantic = 
+        !global.params.symdebug && willInline() && !global.params.useUnitTests;
+
+    Logger::println("Running some extra semantic3's for inlining purposes");
+    for (unsigned i = 0; i < Module::amodules.dim; i++)
     {
-        global.inExtraInliningSemantic = true;
-        Logger::println("Running some extra semantic3's for inlining purposes");
+        Module *m = Module::amodules[i];
+        if(needExtraInliningSemantic || m->needExtraInliningSemantic)
         {
-            // Do pass 3 semantic analysis on all imported modules,
-            // since otherwise functions in them cannot be inlined
-            for (unsigned i = 0; i < Module::amodules.dim; i++)
-            {
-                Module *m = Module::amodules[i];
-                if (global.params.verbose)
-                    printf("semantic3 %s\n", m->toChars());
-                m->semantic2();
-                m->semantic3();
-            }
-            if (global.errors)
-                fatal();
+            global.inExtraInliningSemantic = true;
+            if (global.params.verbose) printf("semantic3 %s\n", m->toChars());
+            m->semantic2();
+            m->semantic3();
+            global.inExtraInliningSemantic = false;
         }
-        global.inExtraInliningSemantic = false;
     }
     if (global.errors || global.warnings)
         fatal();

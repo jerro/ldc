@@ -194,6 +194,8 @@ struct Module : Package
     void genmoduleinfo();
 
 #if IN_LLVM
+    bool needExtraInliningSemantic;
+
     // LDC
     llvm::Module* genLLVMModule(llvm::LLVMContext& context);
     void buildTargetFiles(bool singleObj);
