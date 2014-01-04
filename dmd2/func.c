@@ -103,6 +103,7 @@ FuncDeclaration::FuncDeclaration(Loc loc, Loc endloc, Identifier *id, StorageCla
     // LDC
     isArrayOp = false;
     allowInlining = false;
+    alwaysInline = false;
     neverInline = false;
     availableExternally = true; // assume this unless proven otherwise
 #endif
@@ -236,7 +237,6 @@ void FuncDeclaration::semantic(Scope *sc)
 #if IN_LLVM
     if(userAttributes)
     {
-        bool alwaysInline = false;
         assert(ldcAttributes.dim == 0);
         expandTuples(userAttributes);
         for (size_t i = 0; i < userAttributes->dim; i++)

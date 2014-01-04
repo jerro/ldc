@@ -944,6 +944,8 @@ struct FuncDeclaration : Declaration
     // true if overridden with the pragma(LDC_allow_inline); stmt
     bool allowInlining;
 
+    bool alwaysInline;
+    
     // true if set with the pragma(LDC_never_inline); stmt
     bool neverInline;
 

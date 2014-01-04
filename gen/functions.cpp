@@ -820,7 +820,6 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
         AppendFunctionToLLVMGlobalCtorsDtors(func, fdecl->priority, fdecl->llvmInternal == LLVMglobal_crt_ctor);
     }
 
-    bool isAlwaysInline = false;
     if (fdecl->userAttributes)
     {
         expandTuples(fdecl->userAttributes);
@@ -894,9 +893,6 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
                     int cmp = name.compare(simpleAttribute[k].name);
                     if (!cmp)
                     {
-                        if(simpleAttribute[k].attr == llvm::Attribute::AlwaysInline)
-                            isAlwaysInline = true;
-
                         func->addFnAttr(simpleAttribute[k].attr);
                         break;
                     }
@@ -988,9 +984,8 @@ void DtoDeclareFunction(FuncDeclaration* fdecl)
         !global.params.symdebug && willInline() && !global.params.useUnitTests;
 
     if(
-        (inliningEnabled || isAlwaysInline) &&
+        (fdecl->alwaysInline || (inliningEnabled && fdecl->availableExternally)) &&
         fdecl->semanticRun == PASSsemantic3done && 
-        fdecl->availableExternally && 
         fdecl->getModule())
     {
         DtoDefineFunction(fdecl);

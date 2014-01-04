@@ -340,6 +340,9 @@ LLGlobalValue::LinkageTypes DtoLinkage(Dsymbol* sym)
         assert(fdecl->type->ty == Tfunction);
         TypeFunction* ft = static_cast<TypeFunction*>(fdecl->type);
 
+        if (fdecl->alwaysInline)
+            return llvm::GlobalValue::PrivateLinkage;
+
         // intrinsics are always external
         if (fdecl->llvmInternal == LLVMintrinsic)
             return llvm::GlobalValue::ExternalLinkage;
