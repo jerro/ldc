@@ -167,6 +167,9 @@ void FuncDeclaration::semantic(Scope *sc)
     Dsymbol *pd;
     bool doesoverride;
 
+    if(FuncLiteralDeclaration* fld = isFuncLiteralDeclaration())
+        fld->initializeIdent(sc);
+
 #if 0
     printf("FuncDeclaration::semantic(sc = %p, this = %p, '%s', linkage = %d)\n", sc, this, toPrettyChars(), sc->linkage);
     if (isFuncLiteralDeclaration())
@@ -4061,7 +4064,8 @@ FuncLiteralDeclaration::FuncLiteralDeclaration(Loc loc, Loc endloc, Type *type,
         id = "__dgliteral";
     else
         id = "__funcliteral";
-    this->ident = Lexer::uniqueId(id);
+    this->ident = NULL;
+    this->prefix = id;
     this->tok = tok;
     this->fes = fes;
     this->treq = NULL;
@@ -4070,6 +4074,11 @@ FuncLiteralDeclaration::FuncLiteralDeclaration(Loc loc, Loc endloc, Type *type,
 #if IN_LLVM
     this->owningTemplate = NULL;
 #endif
+}
+
+void FuncLiteralDeclaration::initializeIdent(Scope* s)
+{
+    if(!ident) ident = Lexer::uniqueId(prefix, s->parent->getUniqueIdNumber());
 }
 
 Dsymbol *FuncLiteralDeclaration::syntaxCopy(Dsymbol *s)

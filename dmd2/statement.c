@@ -4432,7 +4432,7 @@ Statement *SynchronizedStatement::semantic(Scope *sc)
          *  _d_criticalenter(critsec.ptr);
          *  try { body } finally { _d_criticalexit(critsec.ptr); }
          */
-        Identifier *id = Lexer::uniqueId("__critsec");
+        Identifier *id = Lexer::uniqueId("__critsec", sc->parent->getUniqueIdNumber());
 #if !IN_LLVM
         Type *t = new TypeSArray(Type::tint8, new IntegerExp(Target::ptrsize + (global.params.is64bit ? os_critsecsize64() : os_critsecsize32())));
 #else

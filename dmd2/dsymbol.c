@@ -59,6 +59,7 @@ Dsymbol::Dsymbol()
     this->unittest = NULL;
 #if IN_LLVM
     this->llvmInternal = LLVMnone;
+    this->uniqueIdNumber = 0;
 #endif
 }
 
@@ -80,6 +81,7 @@ Dsymbol::Dsymbol(Identifier *ident)
     this->unittest = NULL;
 #if IN_LLVM
     this->llvmInternal = LLVMnone;
+    this->uniqueIdNumber = 0;
 #endif
 }
 

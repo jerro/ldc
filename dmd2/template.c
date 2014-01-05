@@ -476,6 +476,14 @@ void TemplateDeclaration::semantic(Scope *sc)
         return;         // semantic() already run
     semanticRun = PASSsemantic;
 
+    if(literal)
+    {
+        assert(onemember);
+        FuncLiteralDeclaration* fld = onemember->isFuncLiteralDeclaration();
+        fld->initializeIdent(sc);
+        ident = fld->ident;
+    }
+
     // Remember templates defined in module object that we need to know about
     if (sc->module && sc->module->ident == Id::object)
     {

@@ -1002,6 +1002,8 @@ struct FuncLiteralDeclaration : FuncDeclaration
     // TemplateInstance::semantic and the fact that importedFrom is only set
     // once for the first module.
     TemplateInstance *owningTemplate;
+    void initializeIdent(Scope* s);
+    const char* prefix;
 #endif
 };
 

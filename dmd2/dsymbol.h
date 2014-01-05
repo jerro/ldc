@@ -286,6 +286,9 @@ struct Dsymbol : Object
     virtual TypeInfoDeclaration* isTypeInfoDeclaration() { return NULL; }
     virtual ClassInfoDeclaration* isClassInfoDeclaration() { return NULL; }
 
+    int uniqueIdNumber;
+    int getUniqueIdNumber(){ return uniqueIdNumber++; }
+
     /// Codegen traversal
     virtual void codegen(IRState* p);
 

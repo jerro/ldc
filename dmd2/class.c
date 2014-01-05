@@ -276,7 +276,7 @@ void ClassDeclaration::semantic(Scope *sc)
     if (!ident)         // if anonymous class
     {   const char *id = "__anonclass";
 
-        ident = Identifier::generateId(id);
+        ident = Identifier::generateId(id, sc->parent->getUniqueIdNumber());
     }
 
     if (!sc)
